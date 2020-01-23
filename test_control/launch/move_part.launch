@@ -1,0 +1,4 @@
+<launch>
+	<node name="test_movement" pkg="test_control" type="move_part.py" />
+</launch>
+

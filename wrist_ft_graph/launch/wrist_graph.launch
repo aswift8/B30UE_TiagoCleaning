@@ -1,0 +1,4 @@
+<launch>
+	<node name="wrist_graph" pkg="wrist_ft_graph" type="wrist_graph.py" output="screen" />
+</launch>
+

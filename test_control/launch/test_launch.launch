@@ -1,0 +1,4 @@
+<launch>
+	<node name="testing" pkg="test_control" type="testing.py" output="screen" />
+</launch>
+
