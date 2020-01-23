@@ -21,7 +21,6 @@ axtx = fig.add_subplot(2,3,4)
 axty = fig.add_subplot(2,3,5)
 axtz = fig.add_subplot(2,3,6)
 
-new_vals = 0
 ts = []
 fxs = []
 fys = []
@@ -33,7 +32,7 @@ tzs = []
 
 # Callback method
 def cb_wrist(msg):
-	global time_start, secs_last, msg_recent, ts, fxs, fys, fzs, txs, tys, tzs, new_vals
+	global time_start, secs_last, msg_recent, ts, fxs, fys, fzs, txs, tys, tzs
 	if not time_start:
 		time_start = msg.header.stamp
 	f = msg.wrench.force
@@ -48,7 +47,25 @@ def cb_wrist(msg):
 	txs.append(t.x)
 	tys.append(t.y)
 	tzs.append(t.z)
-	new_vals += 1
+
+
+def crop_lists():
+	global ts, fxs, fys, fzs, txs, tys, tzs
+	time_latest = ts[-1]
+	time_earliest = time_latest - 10
+	index_earliest = len(ts)/2			# Start at middle
+	while ts[index_earliest] < time_earliest:
+		index_earliest += 1
+	while ts[index_earliest] > time_earliest:
+		index_earliest -= 1
+	ts = ts[index_earliest:]
+	fxs = fxs[index_earliest:]
+	fys = fys[index_earliest:]
+	fzs = fzs[index_earliest:]
+	txs = txs[index_earliest:]
+	tys = tys[index_earliest:]
+	tzs = tzs[index_earliest:]
+	print("Cropped")
 
 
 # Set up graph
@@ -61,31 +78,31 @@ sub_wrist = rospy.Subscriber("/wrist_ft", WrenchStamped, cb_wrist)
 
 #vals_to_display = 100	# - fix
 time_to_show = 10	# 10s
+last_time_crop = 0
 
 # Loop
 r = rospy.Rate(5)
 while not rospy.is_shutdown():
-	entries = len(ts)
-	if entries == 0:
+	if len(ts) == 0:
 		r.sleep()
 		continue
-	if entries > new_vals:
-		# Remove old vals - matplotlib keeps them anyway(?)
-		ts = ts[entries - new_vals:]
-		fxs = fxs[entries - new_vals:]
-		fys = fys[entries - new_vals:]
-		fzs = fzs[entries - new_vals:]
-		txs = txs[entries - new_vals:]
-		tys = tys[entries - new_vals:]
-		tzs = tzs[entries - new_vals:]
+	t_r = ts[-1]
+	t_l = max(t_r - time_to_show, 0)
+	if last_time_crop < t_l-10:
+		crop_lists()
+		last_time_crop = t_l
+		axfx.clear()
+		axfy.clear()
+		axfz.clear()
+		axtx.clear()
+		axty.clear()
+		axtz.clear()
 	axfx.plot(ts, fxs, color='red')
 	axfy.plot(ts, fys, color='green')
 	axfz.plot(ts, fzs, color='blue')
 	axtx.plot(ts, txs, color='red')
 	axty.plot(ts, tys, color='green')
 	axtz.plot(ts, tzs, color='blue')
-	t_r = ts[-1]
-	t_l = max(t_r - time_to_show, 0)
 	axfx.set_xlim(t_l, t_r)
 	axfy.set_xlim(t_l, t_r)
 	axfz.set_xlim(t_l, t_r)

@@ -59,7 +59,7 @@ pub_arm = rospy.Publisher("/arm_controller/safe_command", JointTrajectory, queue
 msg_arm = JointTrajectory()
 msg_arm.joint_names = ["arm_1_joint", "arm_2_joint", "arm_3_joint", "arm_4_joint", "arm_5_joint", "arm_6_joint", "arm_7_joint"]
 # Needs point
-"""
+
 point_arm_0 = JointTrajectoryPoint()
 point_arm_0.positions = [0, 0, 0, 0, 0, 0, 0]
 point_arm_0.time_from_start = Duration(secs=3)
@@ -89,7 +89,7 @@ point_arm_8.positions = [0, 0, 0, 0, 0, 0, 0]
 point_arm_8.time_from_start = Duration(secs=27)
 # Add point to message
 msg_arm.points = [point_arm_0,point_arm_1,point_arm_2,point_arm_3,point_arm_4,point_arm_5,point_arm_6,point_arm_7,point_arm_8]
-"""
+
 """
 point_arm_0 = JointTrajectoryPoint()
 point_arm_0.positions = [0, 0, 0, 0, 0, 0, 0]
@@ -104,7 +104,7 @@ point_arm_3 = JointTrajectoryPoint()
 point_arm_3.positions = [0, 0, 0, 0, 0, 0, 0]
 point_arm_3.time_from_start = Duration(secs=12)
 msg_arm.points = [point_arm_0,point_arm_1,point_arm_2,point_arm_3]
-"""
+
 point_arm_0 = JointTrajectoryPoint()
 point_arm_0.positions = [0, 0, 0, 0, 0, 0, 0]
 point_arm_0.time_from_start = Duration(nsecs=1)
@@ -115,7 +115,7 @@ point_arm_2 = JointTrajectoryPoint()
 point_arm_2.positions = [0, 0, 0, 0, 0, 0, 0]
 point_arm_2.time_from_start = Duration(secs=2)
 msg_arm.points = [point_arm_0, point_arm_1, point_arm_2]
-
+"""
 # Publish message
 #publish_once(pub_head, msg_head)
 #publish_once(pub_torso, msg_torso)
