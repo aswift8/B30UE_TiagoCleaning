@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="my_xml_test" type="xml_read_test.py" name="xml_reader" args="/home/niko/catkin_ws/src/my_xml_test/data/test_file.xml"/>
+</launch>
