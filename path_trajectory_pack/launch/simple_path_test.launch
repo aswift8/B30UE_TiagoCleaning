@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="path_trajectory_pack"
+          type="PathControl.py"
+          name="path_controller_node"
+          args="/home/niko/catkin_ws/src/B30UE_TiagoCleaning/path_trajectory_pack/data/simple_xml.xml"/>
+</launch>
