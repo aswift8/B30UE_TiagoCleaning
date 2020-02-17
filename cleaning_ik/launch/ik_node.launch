@@ -1,0 +1,4 @@
+<launch>
+	<node name="ik_node" pkg="cleaning_ik" type="ik_node.py" output="screen" />
+</launch>
+

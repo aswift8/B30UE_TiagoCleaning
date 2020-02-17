@@ -1,0 +1,4 @@
+<launch>
+	<node name="cleaning_moveit" pkg="cleaning_moveit" type="cleaning_moveit" output="screen" />
+</launch>
+

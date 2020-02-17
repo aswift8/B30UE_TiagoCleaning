@@ -14,6 +14,7 @@ time_start = False
 secs_last = -1
 
 fig = plt.figure()
+fig.canvas.set_window_title("/wrist_ft readings")
 axfx = fig.add_subplot(2,3,1)
 axfy = fig.add_subplot(2,3,2)
 axfz = fig.add_subplot(2,3,3)
@@ -65,7 +66,6 @@ def crop_lists():
 	txs = txs[index_earliest:]
 	tys = tys[index_earliest:]
 	tzs = tzs[index_earliest:]
-	print("Cropped")
 
 
 # Set up graph
