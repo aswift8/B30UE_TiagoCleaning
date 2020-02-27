@@ -10,8 +10,8 @@ class Memory:
     current_rotation = Float32MultiArray()
     current_velocity = Vector3(0, 0, 0)
     receive_velocity_from = "/path/desired_velocity"
-    give_position_to = "/path/current_position"
-    give_rotation_to = "/path/current_rotation"
+    give_position_to = "/cleaning/forward_kinematics/position"
+    give_rotation_to = "/cleaning/forward_kinematics/orientation"
     rate = 10
 
 
@@ -43,8 +43,8 @@ pub_rot = rospy.Publisher(Memory.give_rotation_to, Float32MultiArray, queue_size
 rospy.Subscriber(Memory.receive_velocity_from, Vector3, update_velocity)
 
 # wait for one second
-for i in range(0, Memory.rate):
-    rate.sleep()
+# for i in range(0, Memory.rate):
+#     rate.sleep()
 
 while not rospy.is_shutdown():
     update_pose()
