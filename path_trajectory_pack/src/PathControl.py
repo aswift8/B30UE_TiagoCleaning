@@ -105,7 +105,10 @@ def calculate_velocity(start_point, end_point, desired_speed,
 
     # TODO test rotation transformation
     # z rotation correction
-    # vector.z = -math.atan2(Memory.current_rotation_3d.data[1], Memory.current_rotation_3d.data[0])
+    # theta = -math.atan2(Memory.current_rotation_3d.data[7], -Memory.current_rotation_3d.data[6])
+    # r = 1 + Memory.current_rotation_3d.data[8]
+    # vector.z = r*(-math.cos(theta) - Memory.current_rotation_3d.data[2]) \
+    #            + (1-r)*(math.asin(Memory.current_rotation_3d.data[3]))
     # if vector.z != 0:
     #     new_x = vector.x * math.cos(vector.z) + vector.y * math.sin(vector.z)
     #     new_y = vector.y * math.cos(vector.z) + vector.x * math.sin(vector.z)
@@ -113,7 +116,6 @@ def calculate_velocity(start_point, end_point, desired_speed,
     #     vector.y = new_y
     #     vector.z *= angular_correct_multi
 
-    # normalises velocity
     return vector
 
 
