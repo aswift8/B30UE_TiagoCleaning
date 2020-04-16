@@ -6,50 +6,70 @@ import xml.etree.cElementTree
 import math
 from std_msgs.msg import String, Float32MultiArray
 from geometry_msgs.msg import Vector3, Point
+import numpy as np
+from scipy.spatial.transform import Rotation as R
 
+"""
+Origin Axes:
+x axis = forward
+y axis = left
+z axis = up
+
+End-Effector Axes:
+x axis = line along end-effector
+y axis = line between pincers
+z axis = line intersecting pincers
+
+Note: force sensor axis are different from end-effector
+"""
 
 class Memory:
     # operation parameters
     run_rate = 10
+    speed = 1
     correction_threshold = 0.01
     velocity_threshold = 0.01
-    z_abs_boundary_min = 0
-    z_abs_boundary_max = 2
-    position_update_threshold = 0.1
+    rel_origin_boundaries = np.array([[-10, 10], [-10, 10], [0.5, 2]])
+    # default projection_direction is ([0, 1, 0], [-1, 0, 0], [0, 0, 1])
+    plane_projection_direction = np.array([[ 0,  1,  0],
+                                           [-1,  0,  0],
+                                           [ 0,  0,  1]])
     # static variables (for access inside methods)
     instruction = ""
-    current_point_3d = Point(0, 0, 0)
-    current_rotation_3d = Float32MultiArray()
-    current_point_2d = (0, 0)
+    global_point_3d = Point(0, 0, 0)
+    plane_point_2d = (0, 0)
+    current_rotation_3d = np.array([[1, 0, 0],
+                                    [0, 1, 0],
+                                    [0, 0, 1]])
+
+
+def squared(a):
+    return a*a
 
 
 def distance_between_points(point_a, point_b):
-    delta_x_sq = math.pow(point_a.x - point_b.x, 2)
-    delta_y_sq = math.pow(point_a.y - point_b.y, 2)
-    delta_z_sq = math.pow(point_a.z - point_b.z, 2)
+    delta_x_sq = squared(point_a.x - point_b.x)
+    delta_y_sq = squared(point_a.y - point_b.y)
+    delta_z_sq = squared(point_a.z - point_b.z)
     return math.sqrt(delta_x_sq + delta_y_sq + delta_z_sq)
 
 
 def update_position(data):
-    current_position = data
-    #if distance_between_points(Memory.current_point_3d, current_position) > Memory.position_update_threshold:
-    Memory.current_point_3d = current_position
-    Memory.current_point_2d = transform_z(Memory.current_point_3d, False)
+    Memory.global_point_3d = data
+    Memory.plane_point_2d = transform_3d_to_2d(Memory.global_point_3d)
 
 
 def update_rotation(data):
-    Memory.current_rotation_3d = data
+    Memory.current_rotation_3d = np.array([data[0], data[3], data[6]],
+                                          [data[1], data[4], data[7]],
+                                          [data[2], data[5], data[8]])
 
 
-def transform_z(vector, mode):
-    if mode:
-        vector_3d = Vector3()
-        vector_3d.x = vector[0]
-        vector_3d.y = vector[1]
-        vector_3d.z = 0
-        return vector_3d
-    else:
-        return vector.x, vector.y
+# TODO correct transformation to take projection_direction into account (done?)
+def transform_3d_to_2d(vector):
+    point_3d = [vector[0], vector[1], vector[2]]
+    point_2d = R.from_matrix(Memory.current_rotation_3d).apply(point_3d)
+    return point_2d[0], point_2d[1]
 
 
 def read_path(filename):
@@ -62,17 +82,15 @@ def read_path(filename):
     return paths
 
 
-def calculate_velocity(start_point, end_point, desired_speed,
-                       linear_correct_multi, angular_correct_multi, slow_on_approach_distance):
-    vector = Vector3()
-    vector.x = end_point[0] - start_point[0]
-    vector.y = end_point[1] - start_point[1]
-    vector = normalise_vector(vector, slow_on_approach_distance, desired_speed)
+def calculate_velocity(start_point, end_point, linear_correct_multi,
+                        angular_correct_multi, slow_on_approach_distance):
+    # translation calculation
+    vector = Vector3(x=end_point[0] - start_point[0], y=end_point[1] - start_point[1], z=0)
+    vector = normalise_2d_vector(vector, slow_on_approach_distance, Memory.speed)
 
-    # TODO test alternate direction gradients (absolute path test)
     # error correction calculation
     if linear_correct_multi > 0:
-        correction_magnitude = point_left_by(start_point, end_point, Memory.current_point_2d)
+        correction_magnitude = point_left_by(start_point, end_point, Memory.plane_point_2d)
         if abs(correction_magnitude) > Memory.correction_threshold:
             correction_m = inverse_gradient(get_gradient(start_point, end_point))
             if correction_m == "inf":
@@ -101,26 +119,20 @@ def calculate_velocity(start_point, end_point, desired_speed,
                         vector.x -= delta_x
                         vector.y += delta_y
                         rospy.loginfo("check: - -")
-            vector = normalise_vector(vector, slow_on_approach_distance, desired_speed)
+            vector = normalise_2d_vector(vector, slow_on_approach_distance, Memory.speed)
 
     # TODO test rotation transformation
-    # z rotation correction
-    # theta = -math.atan2(Memory.current_rotation_3d.data[7], -Memory.current_rotation_3d.data[6])
-    # r = 1 + Memory.current_rotation_3d.data[8]
-    # vector.z = r*(-math.cos(theta) - Memory.current_rotation_3d.data[2]) \
-    #            + (1-r)*(math.asin(Memory.current_rotation_3d.data[3]))
-    # if vector.z != 0:
-    #     new_x = vector.x * math.cos(vector.z) + vector.y * math.sin(vector.z)
-    #     new_y = vector.y * math.cos(vector.z) + vector.x * math.sin(vector.z)
-    #     vector.x = new_x
-    #     vector.y = new_y
-    #     vector.z *= angular_correct_multi
+    # rotation transformation calculation
+    vector_array = np.array([vector.x, vector.y, vector.z])
+    vector_array = R.from_matrix(Memory.current_rotation_3d).inv().apply(vector_array)
 
-    return vector
+    #return vector
+    return Vector3(x=vector_array[0], x=vector_array[1], x=vector_array[2])
 
 
-def normalise_vector(vector, slow_on_approach_distance, multi):
+def normalise_2d_vector(vector, slow_on_approach_distance, multi):
     magnitude = math.sqrt((vector.x * vector.x) + (vector.y * vector.y))
+    magnitude = math.sqrt(squared(vector.x) + squared(vector.y))
     if magnitude < Memory.velocity_threshold:
         vector.x = 0
         vector.y = 0
@@ -196,6 +208,15 @@ def offset_coordinates(points, offset):
     return rel_points
 
 
+def global_point_3d_outside_boundary():
+    if global_point_3d.x < rel_origin_boundaries[0][0] or global_point_3d.x > rel_origin_boundaries[0][1]
+    or global_point_3d.y < rel_origin_boundaries[1][0] or global_point_3d.y > rel_origin_boundaries[1][1]
+    or global_point_3d.z < rel_origin_boundaries[2][0] or global_point_3d.z > rel_origin_boundaries[2][1]:
+        return True
+    else:
+        return False
+
+
 # variable initialisation
 follow_path = False
 move_to_point = False
@@ -203,7 +224,6 @@ move_to_target = (0, 0)
 path_points = []
 rel_path_points = []
 end2_points = []
-Memory.current_rotation_3d.data = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 current_path_section = 0
 path_section_count = 0
 
@@ -256,7 +276,7 @@ while not rospy.is_shutdown():
             move_to_point = False
             current_path_section = 0
             path_section_count = len(path_points) - 1
-            rel_path_points = offset_coordinates(path_points, Memory.current_point_2d)
+            rel_path_points = offset_coordinates(path_points, Memory.plane_point_2d)
             end2_points = calculate_border_points(rel_path_points)
             pub_logger.publish("path_controller reset")
         elif instruction[0] == "moveTo":
@@ -264,15 +284,23 @@ while not rospy.is_shutdown():
             move_to_target = (float(instruction[1]), float(instruction[2]))
         elif instruction[0] == "moveBy":
             move_to_point = True
-            move_to_target = (Memory.current_point_2d[0] + float(instruction[1]),
-                              Memory.current_point_2d[1] + float(instruction[2]))
+            move_to_target = (Memory.plane_point_2d[0] + float(instruction[1]),
+                              Memory.plane_point_2d[1] + float(instruction[2]))
         else:
             # for unrecognised commands
             pub_logger.publish("unrecognised command: " + Memory.instruction)
         Memory.instruction = ""
 
+    # stops the end-effector from moving if it's outside the defined bounary area
+    if global_point_3d_outside_boundary() and (move_to_point or follow_path):
+        pub_desired_velocity.publish(Vector3(0, 0, 0))
+        rospy.loginfo("end-effector left boundary area")
+        Memory.instruction = "stop"
+        continue
+
+    # moves the end-effector
     if move_to_point:
-        pub_desired_velocity.publish(calculate_velocity(Memory.current_point_2d, move_to_target, 1, 0, 1, 1))
+        pub_desired_velocity.publish(calculate_velocity(Memory.plane_point_2d, move_to_target, 0, 1, 1))
     elif follow_path:
         # identify current path section
         # stops moving end-effector if the end of the path has been reached
@@ -287,10 +315,10 @@ while not rospy.is_shutdown():
                 start = rel_path_points[current_path_section]
                 end = rel_path_points[current_path_section + 1]
                 start_left_of_border = point_is_left(end, end2_points[current_path_section], start)
-                current_left_of_border = point_is_left(end, end2_points[current_path_section], Memory.current_point_2d)
+                current_left_of_border = point_is_left(end, end2_points[current_path_section], Memory.plane_point_2d)
                 if start_left_of_border == current_left_of_border:
                     # we are on this current line
-                    pub_desired_velocity.publish(calculate_velocity(start, end, 1, 1, 1, 0))
+                    pub_desired_velocity.publish(calculate_velocity(start, end, 1, 1, 0))
                     break
                 else:
                     # we have moved to the next section

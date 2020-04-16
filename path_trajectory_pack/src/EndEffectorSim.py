@@ -3,11 +3,14 @@
 import rospy
 from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import Vector3
+import numpy as np
 
 
 class Memory:
+    current_rotation = np.array([[ 1,  0,  0],
+                                 [ 0,  1,  0],
+                                 [ 0,  0,  1]])
     current_position = Vector3(0, 0, 0)
-    current_rotation = Float32MultiArray()
     current_velocity = Vector3(0, 0, 0)
     receive_velocity_from = "/path/desired_velocity"
     give_position_to = "/cleaning/forward_kinematics/position"
@@ -30,11 +33,12 @@ def get_current_position():
     return Memory.current_position
 
 
-def get_current_rotation():
-    return Memory.current_rotation
+def get_rotation_array():
+    return Float32MultiArray(
+    data=[current_rotation[0], current_rotation[3], current_rotation[6],
+          current_rotation[1], current_rotation[4], current_rotation[7]
+          current_rotation[2], current_rotation[5], current_rotation[8]])
 
-
-Memory.current_rotation.data = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 rospy.init_node("end_effector_sim")
 rate = rospy.Rate(Memory.rate)
@@ -49,5 +53,5 @@ rospy.Subscriber(Memory.receive_velocity_from, Vector3, update_velocity)
 while not rospy.is_shutdown():
     update_pose()
     pub_pos.publish(get_current_position())
-    pub_rot.publish(get_current_rotation())
+    pub_rot.publish(get_rotation_array())
     rate.sleep()
