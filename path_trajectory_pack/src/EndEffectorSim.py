@@ -36,7 +36,7 @@ def get_current_position():
 def get_rotation_array():
     return Float32MultiArray(
     data=[current_rotation[0], current_rotation[3], current_rotation[6],
-          current_rotation[1], current_rotation[4], current_rotation[7]
+          current_rotation[1], current_rotation[4], current_rotation[7],
           current_rotation[2], current_rotation[5], current_rotation[8]])
 
 

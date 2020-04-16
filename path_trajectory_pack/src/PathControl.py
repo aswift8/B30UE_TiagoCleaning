@@ -68,7 +68,8 @@ def update_rotation(data):
 # TODO correct transformation to take projection_direction into account (done?)
 def transform_3d_to_2d(vector):
     point_3d = [vector[0], vector[1], vector[2]]
-    point_2d = R.from_matrix(Memory.current_rotation_3d).apply(point_3d)
+    #point_2d = R.from_matrix(Memory.current_rotation_3d).apply(point_3d)
+    point_2d = R.from_matrix(Memory.plane_projection_direction).apply(point_3d)
     return point_2d[0], point_2d[1]
 
 
@@ -121,17 +122,20 @@ def calculate_velocity(start_point, end_point, linear_correct_multi,
                         rospy.loginfo("check: - -")
             vector = normalise_2d_vector(vector, slow_on_approach_distance, Memory.speed)
 
-    # TODO test rotation transformation
-    # rotation transformation calculation
-    vector_array = np.array([vector.x, vector.y, vector.z])
-    vector_array = R.from_matrix(Memory.current_rotation_3d).inv().apply(vector_array)
+    return vector
+    #return Vector3(x=vector_array[0], x=vector_array[1], x=vector_array[2])
 
-    #return vector
-    return Vector3(x=vector_array[0], x=vector_array[1], x=vector_array[2])
+
+def rotate_vector(vector, theta):
+    if theta != 0:
+        array = R.from_euler('z', theta).apply([vector.x, vector.y, 0])
+        vector.x = array[0]
+        vector.y = array[1]
+    return vector
 
 
 def normalise_2d_vector(vector, slow_on_approach_distance, multi):
-    magnitude = math.sqrt((vector.x * vector.x) + (vector.y * vector.y))
+    #magnitude = math.sqrt(squared(vector.x * vector.x) + (vector.y * vector.y))
     magnitude = math.sqrt(squared(vector.x) + squared(vector.y))
     if magnitude < Memory.velocity_threshold:
         vector.x = 0
