@@ -23,17 +23,18 @@ z axis = line intersecting pincers
 Note: force sensor axis are different from end-effector
 """
 
+
 class Memory:
     # operation parameters
     run_rate = 10
     speed = 1
     correction_threshold = 0.01
     velocity_threshold = 0.01
-    rel_origin_boundaries = np.array([[-10, 10], [-10, 10], [0.5, 2]])
+    rel_origin_boundaries = np.array([[-10, 10], [-10, 10], [-10, 10]])
     # default projection_direction is ([0, 1, 0], [-1, 0, 0], [0, 0, 1])
-    plane_projection_direction = np.array([[ 0,  1,  0],
-                                           [-1,  0,  0],
-                                           [ 0,  0,  1]])
+    plane_projection_direction = np.array([[0, 1, 0],
+                                          [-1, 0, 0],
+                                           [0, 0, 1]])
     # static variables (for access inside methods)
     instruction = ""
     global_point_3d = Point(0, 0, 0)
@@ -44,7 +45,7 @@ class Memory:
 
 
 def squared(a):
-    return a*a
+    return a * a
 
 
 def distance_between_points(point_a, point_b):
@@ -60,16 +61,18 @@ def update_position(data):
 
 
 def update_rotation(data):
-    Memory.current_rotation_3d = np.array([data[0], data[3], data[6]],
-                                          [data[1], data[4], data[7]],
-                                          [data[2], data[5], data[8]])
+    data = data.data
+    Memory.current_rotation_3d = np.array([[data[0], data[3], data[6]],
+                                           [data[1], data[4], data[7]],
+                                           [data[2], data[5], data[8]]])
 
 
 # TODO correct transformation to take projection_direction into account (done?)
 def transform_3d_to_2d(vector):
-    point_3d = [vector[0], vector[1], vector[2]]
-    #point_2d = R.from_matrix(Memory.current_rotation_3d).apply(point_3d)
-    point_2d = R.from_matrix(Memory.plane_projection_direction).apply(point_3d)
+    point_3d = [vector.x, vector.y, vector.z]
+    # point_2d = R.from_matrix(Memory.current_rotation_3d).apply(point_3d)
+    point_2d = R.from_dcm(Memory.plane_projection_direction).apply(point_3d)
+
     return point_2d[0], point_2d[1]
 
 
@@ -84,7 +87,7 @@ def read_path(filename):
 
 
 def calculate_velocity(start_point, end_point, linear_correct_multi,
-                        angular_correct_multi, slow_on_approach_distance):
+                       angular_correct_multi, slow_on_approach_distance):
     # translation calculation
     vector = Vector3(x=end_point[0] - start_point[0], y=end_point[1] - start_point[1], z=0)
     vector = normalise_2d_vector(vector, slow_on_approach_distance, Memory.speed)
@@ -99,7 +102,7 @@ def calculate_velocity(start_point, end_point, linear_correct_multi,
             elif correction_m == 0:
                 vector.x += correction_magnitude * linear_correct_multi
             else:
-                theta = math.atan(correction_m) # neg gradient => neg radian => pos cosine
+                theta = math.atan(correction_m)  # neg gradient => neg radian => pos cosine
                 delta_x = abs(correction_magnitude * math.cos(theta) * linear_correct_multi)
                 delta_y = abs(correction_magnitude * math.sin(theta) * linear_correct_multi)
                 if correction_m > 0:
@@ -123,7 +126,6 @@ def calculate_velocity(start_point, end_point, linear_correct_multi,
             vector = normalise_2d_vector(vector, slow_on_approach_distance, Memory.speed)
 
     return vector
-    #return Vector3(x=vector_array[0], x=vector_array[1], x=vector_array[2])
 
 
 def rotate_vector(vector, theta):
@@ -135,7 +137,7 @@ def rotate_vector(vector, theta):
 
 
 def normalise_2d_vector(vector, slow_on_approach_distance, multi):
-    #magnitude = math.sqrt(squared(vector.x * vector.x) + (vector.y * vector.y))
+    # magnitude = math.sqrt(squared(vector.x * vector.x) + (vector.y * vector.y))
     magnitude = math.sqrt(squared(vector.x) + squared(vector.y))
     if magnitude < Memory.velocity_threshold:
         vector.x = 0
@@ -213,9 +215,12 @@ def offset_coordinates(points, offset):
 
 
 def global_point_3d_outside_boundary():
-    if global_point_3d.x < rel_origin_boundaries[0][0] or global_point_3d.x > rel_origin_boundaries[0][1]
-    or global_point_3d.y < rel_origin_boundaries[1][0] or global_point_3d.y > rel_origin_boundaries[1][1]
-    or global_point_3d.z < rel_origin_boundaries[2][0] or global_point_3d.z > rel_origin_boundaries[2][1]:
+    if Memory.global_point_3d.x < Memory.rel_origin_boundaries[0][0] \
+        or Memory.global_point_3d.x > Memory.rel_origin_boundaries[0][1] \
+        or Memory.global_point_3d.y < Memory.rel_origin_boundaries[1][0] \
+        or Memory.global_point_3d.y > Memory.rel_origin_boundaries[1][1] \
+        or Memory.global_point_3d.z < Memory.rel_origin_boundaries[2][0] \
+        or Memory.global_point_3d.z > Memory.rel_origin_boundaries[2][1]:
         return True
     else:
         return False
@@ -253,10 +258,10 @@ for i in range(0, Memory.run_rate):
 while not rospy.is_shutdown():
     # read instruction if a new one is present
     instruction = Memory.instruction.split(" ")
-    if len(instruction[0]) > 0: # if an instruction exists
+    if len(instruction[0]) > 0:  # if an instruction exists
         pub_logger.publish("new instruction: " + str(Memory.instruction))
         if instruction[0] == "read":
-            if len(instruction) < 2: # read command must have a parameter
+            if len(instruction) < 2:  # read command must have a parameter
                 pub_logger.publish("read command requires a link to read from")
             else:
                 path_points = read_path(instruction[1])
@@ -275,7 +280,6 @@ while not rospy.is_shutdown():
             move_to_point = False
             pub_logger.publish("velocity calculation ended")
         elif instruction[0] == "reset":
-            # TODO zero path onto end-effector's current starting position
             follow_path = False
             move_to_point = False
             current_path_section = 0
@@ -295,7 +299,7 @@ while not rospy.is_shutdown():
             pub_logger.publish("unrecognised command: " + Memory.instruction)
         Memory.instruction = ""
 
-    # stops the end-effector from moving if it's outside the defined bounary area
+    # stops the end-effector from moving if it's outside the defined boundary area
     if global_point_3d_outside_boundary() and (move_to_point or follow_path):
         pub_desired_velocity.publish(Vector3(0, 0, 0))
         rospy.loginfo("end-effector left boundary area")

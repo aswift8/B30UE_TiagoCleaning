@@ -1,0 +1,14 @@
+Windows needed to run simulation:
+    roscore
+    roslaunch path_trajectory_pack simple_path_test.launch
+    rostopic echo /path/desired_velocity
+    rostopic echo /cleaning/forward_kinematics/position
+    rostopic echo /path/logger
+    rostopic pub /path/instruction std_msg/String "<instruction>"
+
+Instructions:
+    "start" - starts following path
+    "stop" - stops the end-effector moving
+    "reset" - shifts the path so the plane (0,0) is at the current starting position
+    "moveTo <x> <y>" - moves end-effector to specified plane coordinates
+    "moveBy <x> <y>" - move end-effector by specified units

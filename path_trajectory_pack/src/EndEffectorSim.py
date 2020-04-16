@@ -4,12 +4,13 @@ import rospy
 from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import Vector3
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 
 class Memory:
-    current_rotation = np.array([[ 1,  0,  0],
-                                 [ 0,  1,  0],
-                                 [ 0,  0,  1]])
+    current_rotation = np.array([[0, 0, 1],
+                                 [0, 1, 0],
+                                [-1, 0, 0]])
     current_position = Vector3(0, 0, 0)
     current_velocity = Vector3(0, 0, 0)
     receive_velocity_from = "/path/desired_velocity"
@@ -22,10 +23,12 @@ def update_velocity(velocity_data):
     Memory.current_velocity = velocity_data
 
 
-def update_pose():
-    Memory.current_position.x += (Memory.current_velocity.x / Memory.rate)
-    Memory.current_position.y += (Memory.current_velocity.y / Memory.rate)
-    Memory.current_position.z += (Memory.current_velocity.z / Memory.rate)
+def update_position():
+    new_velocity = R.from_dcm(Memory.current_rotation).inv().apply(
+        [Memory.current_velocity.x, Memory.current_velocity.y, Memory.current_velocity.z])
+    Memory.current_position.x += (new_velocity[0] / Memory.rate)
+    Memory.current_position.y += (new_velocity[1] / Memory.rate)
+    Memory.current_position.z += (new_velocity[2] / Memory.rate)
     Memory.current_velocity = Vector3(0, 0, 0)
 
 
@@ -35,9 +38,9 @@ def get_current_position():
 
 def get_rotation_array():
     return Float32MultiArray(
-    data=[current_rotation[0], current_rotation[3], current_rotation[6],
-          current_rotation[1], current_rotation[4], current_rotation[7],
-          current_rotation[2], current_rotation[5], current_rotation[8]])
+        data=[Memory.current_rotation[0][0], Memory.current_rotation[2][0], Memory.current_rotation[2][0],
+              Memory.current_rotation[0][1], Memory.current_rotation[2][1], Memory.current_rotation[2][1],
+              Memory.current_rotation[0][2], Memory.current_rotation[2][2], Memory.current_rotation[2][2]])
 
 
 rospy.init_node("end_effector_sim")
@@ -51,7 +54,7 @@ rospy.Subscriber(Memory.receive_velocity_from, Vector3, update_velocity)
 #     rate.sleep()
 
 while not rospy.is_shutdown():
-    update_pose()
+    update_position()
     pub_pos.publish(get_current_position())
     pub_rot.publish(get_rotation_array())
     rate.sleep()
