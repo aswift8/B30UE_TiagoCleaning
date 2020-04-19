@@ -1,0 +1,3 @@
+wrist_graph node creates a MatPlotLib graph for the force-torque sensor in TIAGo's wrist, graphing all forces and torques against time.
+This was expanded on to create the "multi_graph" node.
+Closing the window doesn't close the graph - ctrl+c in terminal to do so.

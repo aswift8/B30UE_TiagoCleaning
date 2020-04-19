@@ -42,57 +42,40 @@ int main(int argc, char**argv)
 	robot_model::RobotModelPtr kinematic_model = robot_model_loader.getModel();
 	robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(kinematic_model));
 
-	moveit::planning_interface::MoveGroup group("arm"); // Could use torso_arm
-//	std::cout << "Model frame: " << kinematic_model->getModelFrame().c_str() << std::endl;
+	moveit::planning_interface::MoveGroup group("arm");
 	group.startStateMonitor();
 
 	const robot_state::JointModelGroup* jmg = kinematic_model->getJointModelGroup("arm");
 
-	std::vector<double> group_variable_values;
 	group.startStateMonitor();
-	group_variable_values = group.getCurrentJointValues();
 
 	kinematic_state->setToRandomPositions(jmg);
 
 	ros::Rate r(20);
 
-//	std::cout << "Starting loop" << std::endl;
 	// Don't need to initialise these every time
 	Eigen::MatrixXd mJacobian;
 	Eigen::Matrix3d mOri;
 	Eigen::Vector3d vPos;
 	Eigen::Vector3d reference_point_position(0.0, 0.0, 0.0);
 
+	std::cout << "Set-up succeeded, entering loop" << std::endl;
 	while (ros::ok()) {
 
 		if (jointAngles.size() > 0) {
 
 			kinematic_state->setJointGroupPositions(jmg, jointAngles);
 
-//			std::cout << "Group variable values:" << std::endl;
-
 			std::vector<double> joint_values;
-/*			std::cout << "Joint values:" << std::endl;
-			for(std::size_t i = 0; i < jmg->getLinkModelNames().size(); ++i) {
-			    std::cout << "  Joint " << jmg->getJointModelNames()[i].c_str() << ": " << jointAngles[i] << std::endl;
-			}
-*/
 
 			// Get Jacobian
 			kinematic_state->getJacobian(jmg, kinematic_state->getLinkModel(jmg->getLinkModelNames().back()), reference_point_position, mJacobian);
-			// Print Jacobian
-//			std::cout << "Jacobian:" << std::endl << mJacobian << std::endl;
 
-			// Get forward kinematics
+			// Get end effector position and orientation
 			const Eigen::Affine3d& end_effector_state = kinematic_state->getGlobalLinkTransform(jmg->getLinkModelNames().back());
 			vPos = end_effector_state.translation();
 			mOri = end_effector_state.rotation();
 
-			// Print translation and rotation in move_base frame
-/*
-			std::cout << "Translation: " << std::endl << end_effector_state.translation() << std::endl;
-			std::cout << "Rotation:    " << std::endl << end_effector_state.rotation() << std::endl;
-*/
 			// Build messages
 			geometry_msgs::Vector3 msgPosition;		// Position
 			msgPosition.x = vPos[0];

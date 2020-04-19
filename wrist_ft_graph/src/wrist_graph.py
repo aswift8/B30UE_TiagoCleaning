@@ -21,6 +21,12 @@ axfz = fig.add_subplot(2,3,3)
 axtx = fig.add_subplot(2,3,4)
 axty = fig.add_subplot(2,3,5)
 axtz = fig.add_subplot(2,3,6)
+axfx.title.set_text("F-X")
+axfy.title.set_text("F-Y")
+axfz.title.set_text("F-Z")
+axtx.title.set_text("T-X")
+axty.title.set_text("T-Y")
+axtz.title.set_text("T-Z")
 
 ts = []
 fxs = []

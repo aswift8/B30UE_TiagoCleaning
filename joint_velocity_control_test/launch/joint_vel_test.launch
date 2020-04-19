@@ -1,0 +1,4 @@
+<launch>
+	<node name="joint_vel_test" pkg="joint_velocity_control_test" type="joint_vel_test.py" output="screen" />
+</launch>
+

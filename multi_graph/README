@@ -1,0 +1,7 @@
+'multi_graph' reads from a Float32MultiArray topic specified in the .launch file, drawing several graphs from the data it receives.
+
+Message content:
+	First value for x-axis (e.g. a timestamp from a message, particularly useful if graphing from simulation not running at realtime)
+	All other values for graphing (make sure to specify the correct number of graphs)
+
+Graphs are created with MatPlotLib

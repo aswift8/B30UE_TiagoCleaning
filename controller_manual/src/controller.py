@@ -79,11 +79,11 @@ def manage_gamepad_inputs():
 				button[bX] = event.state
 			elif event.code == 'BTN_SOUTH':
 				button[bA] = event.state
-			elif event.code == 'BTN_WEST':			# Ubuntu - NORTH and WEST swapped
+			elif event.code == 'BTN_WEST':			# Ubuntu Kinetic 16.04 - NORTH and WEST swapped
 				button[bY] = event.state
 			elif event.code == 'BTN_EAST':
 				button[bB] = event.state
-			elif event.ev_type != "Sync":			# Other (non-sync)
+			elif event.ev_type != "Sync":			# Other (non-sync) event
 				print("Other button detected: ", event.ev_type, event.code, event.state)
 
 
@@ -138,8 +138,7 @@ def main():
 	head_msg.points = [head_point]
 	arm_pub = rospy.Publisher('/arm_controller/safe_command', JointTrajectory, queue_size=1)
 	arm_msg = JointTrajectory()
-	arm_msg.joint_names = ["arm_1_joint", "arm_2_joint", "arm_3_joint", "arm_4_joint", "arm_5_joint", "arm_6_joint",
-						   "arm_7_joint"]
+	arm_msg.joint_names = ["arm_1_joint", "arm_2_joint", "arm_3_joint", "arm_4_joint", "arm_5_joint", "arm_6_joint", "arm_7_joint"]
 	arm_point = JointTrajectoryPoint()
 	arm_point.time_from_start = duration
 	arm_msg.points = [arm_point]
@@ -285,27 +284,14 @@ def main():
 		l_abxy_b["bg"] = col_button_down if button[bB] else col_button_up
 		l_abxy_x["bg"] = col_button_down if button[bX] else col_button_up
 		l_abxy_y["bg"] = col_button_down if button[bY] else col_button_up
-		"""
-		time.sleep(0.1)
-		print("BUTTONS")
-		print(f"A {button[bA]}, B {button[bB]}, X {button[bX]}, Y {button[bY]}")
-		print(f"Start {button[bSTART]}, Select {button[bSELECT]}")
-		print(f"Thumb L {button[bLT]}, R {button[bRT]}")
-		print(f"Bumper L {button[bLB]}, R {button[bRB]}")
-		print("HATS")
-		print(f"d-pad X {hat[hX]}, Y {hat[hY]}")
-		print("JOYSTICKS")
-		print(f"Left  X {axis[aLX]}, Y {axis[aLY]}, Z {axis[aLZ]}")
-		print(f"Right X {axis[aRX]}, Y {axis[aRY]}, Z {axis[aRZ]}")
-		print("-------------------------------------------------------------")
-		"""
 
+		# Change mode
 		if button[bSTART]:
 			control_mode = "move_and_look"
 		elif button[bMODE]:
 			control_mode = "arm_1"
 
-		if control_mode is "move_and_look":
+		if control_mode is "move_and_look":		# Control move base and head
 			move_x = -axis[aLY]
 			move_z = -axis[aLX]
 			base_msg.linear.x = 0 if abs(move_x) < 0.16 else move_x
@@ -329,7 +315,7 @@ def main():
 					head_point.positions = head_current
 				head_msg.points = [head_point]
 				head_pub.publish(head_msg)
-		elif control_mode is "arm_1":
+		elif control_mode is "arm_1":			# Control arm joints 1-4, 6
 			new_vels = np.array([-axis[aLX], -axis[aLY], axis[aLZ] - axis[aRZ], axis[aRY], 0, axis[aRX], 0], dtype=float)
 			nv_use = np.greater(np.absolute(new_vels), np.array([0.2]*7, dtype=float))
 			new_vels = new_vels * nv_use / freq

@@ -1,0 +1,6 @@
+<launch>
+	<node name="multi_graph" pkg="multi_graph" type="multi_graph.py" output="screen" />
+	<param name="readingtopic" value="/readings" />
+	<param name="graphcount" value="7" />
+</launch>
+

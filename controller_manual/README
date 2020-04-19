@@ -1,0 +1,27 @@
+"controller_manual" node publishes commands to TIAGo from a gamepad. It was used with an XBox-360 USB controller.
+
+Two modes are available - move-and-look (Start), and arm control (Mode)
+
+Move-and-Look
+	Left analogue stick to move the robot base (forwards/backwards/turning)
+	Right analogue stick to move the head (up/down/left/right)
+	Triggers to move the torso up (L) and down (R)
+
+Arm Control
+	Different buttons/axes are used to control different joints as follows:
+
+	Joint		      Gamepad
+	  1		Left stick horizontal
+	  2		Left stick vertical
+	  3		Triggers
+	  4		Right stick vertical
+	  5		None
+	  6		Right stick horizontal
+	  7		None
+
+
+All control is velocity-based, so the current states of the robot (torso height, head positions, arm joint positions) are subscribed to.
+
+A GUI is also provided to show which buttons have been pressed, aiding in debugging.
+
+Inputs are read with the "inputs" library ( https://pypi.org/project/inputs/ ) modified very slightly to remove a bug.
