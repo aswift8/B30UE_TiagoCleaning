@@ -1,0 +1,5 @@
+<launch>
+	<node name="pid" pkg="forces_frame_of_reference" type="pid.py" output="screen" />
+	<node name="sensorFrame_2_surfaceFrame" pkg="forces_frame_of_reference" type="sensorFrame_2_surfaceFrame.py" output="screen" />
+
+</launch>
