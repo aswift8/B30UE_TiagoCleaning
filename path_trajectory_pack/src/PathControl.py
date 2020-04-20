@@ -7,7 +7,6 @@ import math
 from std_msgs.msg import String, Float32MultiArray
 from geometry_msgs.msg import Vector3, Point
 import numpy as np
-from scipy.spatial.transform import Rotation as R
 
 """
 Origin Axes:
@@ -23,7 +22,7 @@ z axis = line intersecting pincers
 Note: force sensor axis are different from end-effector
 """
 
-
+# static variables that can be accessed from any method in the script
 class Memory:
     # operation parameters
     run_rate = 10
@@ -31,11 +30,7 @@ class Memory:
     correction_threshold = 0.01
     velocity_threshold = 0.01
     rel_origin_boundaries = np.array([[-10, 10], [-10, 10], [-10, 10]])
-    # default projection_direction is ([0, 1, 0], [-1, 0, 0], [0, 0, 1])
-    plane_projection_direction = np.array([[0, 1, 0],
-                                          [-1, 0, 0],
-                                           [0, 0, 1]])
-    # static variables (for access inside methods)
+    # static variables
     instruction = ""
     global_point_3d = Point(0, 0, 0)
     plane_point_2d = (0, 0)
@@ -44,6 +39,7 @@ class Memory:
                                     [0, 0, 1]])
 
 
+# slightly more efficent than using math.pow(a,2)
 def squared(a):
     return a * a
 
@@ -57,7 +53,7 @@ def distance_between_points(point_a, point_b):
 
 def update_position(data):
     Memory.global_point_3d = data
-    Memory.plane_point_2d = transform_3d_to_2d(Memory.global_point_3d)
+    recalculate_2d_point()
 
 
 def update_rotation(data):
@@ -65,15 +61,11 @@ def update_rotation(data):
     Memory.current_rotation_3d = np.array([[data[0], data[3], data[6]],
                                            [data[1], data[4], data[7]],
                                            [data[2], data[5], data[8]]])
+    recalculate_2d_point()
 
 
-# TODO correct transformation to take projection_direction into account (done?)
-def transform_3d_to_2d(vector):
-    point_3d = [vector.x, vector.y, vector.z]
-    # point_2d = R.from_matrix(Memory.current_rotation_3d).apply(point_3d)
-    point_2d = R.from_dcm(Memory.plane_projection_direction).apply(point_3d)
-
-    return point_2d[0], point_2d[1]
+def recalculate_2d_point():
+    Memory.plane_point_2d = Memory.global_point_3d.x, Memory.global_point_3d.y
 
 
 def read_path(filename):
@@ -86,11 +78,10 @@ def read_path(filename):
     return paths
 
 
-def calculate_velocity(start_point, end_point, linear_correct_multi,
-                       angular_correct_multi, slow_on_approach_distance):
+def calculate_velocity(start_point, end_point,
+                       linear_correct_multi, slow_on_approach_distance):
     # translation calculation
     vector = Vector3(x=end_point[0] - start_point[0], y=end_point[1] - start_point[1], z=0)
-    vector = normalise_2d_vector(vector, slow_on_approach_distance, Memory.speed)
 
     # error correction calculation
     if linear_correct_multi > 0:
@@ -98,7 +89,8 @@ def calculate_velocity(start_point, end_point, linear_correct_multi,
         if abs(correction_magnitude) > Memory.correction_threshold:
             correction_m = inverse_gradient(get_gradient(start_point, end_point))
             if correction_m == "inf":
-                vector.y -= abs(correction_magnitude) * linear_correct_multi
+                # TODO confirm this lines works as intended
+                vector.y -= correction_magnitude) * linear_correct_multi
             elif correction_m == 0:
                 vector.x += correction_magnitude * linear_correct_multi
             else:
@@ -123,21 +115,12 @@ def calculate_velocity(start_point, end_point, linear_correct_multi,
                         vector.x -= delta_x
                         vector.y += delta_y
                         rospy.loginfo("check: - -")
-            vector = normalise_2d_vector(vector, slow_on_approach_distance, Memory.speed)
 
-    return vector
-
-
-def rotate_vector(vector, theta):
-    if theta != 0:
-        array = R.from_euler('z', theta).apply([vector.x, vector.y, 0])
-        vector.x = array[0]
-        vector.y = array[1]
-    return vector
+    return normalise_2d_vector(vector, slow_on_approach_distance, Memory.speed)
 
 
+#
 def normalise_2d_vector(vector, slow_on_approach_distance, multi):
-    # magnitude = math.sqrt(squared(vector.x * vector.x) + (vector.y * vector.y))
     magnitude = math.sqrt(squared(vector.x) + squared(vector.y))
     if magnitude < Memory.velocity_threshold:
         vector.x = 0
@@ -264,7 +247,10 @@ while not rospy.is_shutdown():
             if len(instruction) < 2:  # read command must have a parameter
                 pub_logger.publish("read command requires a link to read from")
             else:
-                path_points = read_path(instruction[1])
+                try:
+                    path_points = read_path(instruction[1])
+                except:
+                    pub_logger.publish("ERROR - file could not be read")
                 Memory.instruction = "reset"
                 pub_logger.publish("new path imported: " + str(path_points))
                 continue
@@ -276,6 +262,7 @@ while not rospy.is_shutdown():
             else:
                 pub_logger.publish("start command: invalid path")
         elif instruction[0] == "stop":
+            pub_desired_velocity.publish(Vector3(0, 0, 0))
             follow_path = False
             move_to_point = False
             pub_logger.publish("velocity calculation ended")
@@ -289,11 +276,17 @@ while not rospy.is_shutdown():
             pub_logger.publish("path_controller reset")
         elif instruction[0] == "moveTo":
             move_to_point = True
-            move_to_target = (float(instruction[1]), float(instruction[2]))
+            try:
+                move_to_target = (float(instruction[1]), float(instruction[2]))
+            except ValueError:
+                pub_logger.publish("invalid paramters - must be two numbers specifying x and y coordinates")
         elif instruction[0] == "moveBy":
             move_to_point = True
-            move_to_target = (Memory.plane_point_2d[0] + float(instruction[1]),
-                              Memory.plane_point_2d[1] + float(instruction[2]))
+            try:
+                move_to_target = (Memory.plane_point_2d[0] + float(instruction[1]),
+                                  Memory.plane_point_2d[1] + float(instruction[2]))
+            except ValueError:
+                pub_logger.publish("invalid paramters - must be two numbers specifying x and y coordinates")
         else:
             # for unrecognised commands
             pub_logger.publish("unrecognised command: " + Memory.instruction)
@@ -301,14 +294,13 @@ while not rospy.is_shutdown():
 
     # stops the end-effector from moving if it's outside the defined boundary area
     if global_point_3d_outside_boundary() and (move_to_point or follow_path):
-        pub_desired_velocity.publish(Vector3(0, 0, 0))
         rospy.loginfo("end-effector left boundary area")
         Memory.instruction = "stop"
         continue
 
     # moves the end-effector
     if move_to_point:
-        pub_desired_velocity.publish(calculate_velocity(Memory.plane_point_2d, move_to_target, 0, 1, 1))
+        pub_desired_velocity.publish(calculate_velocity(Memory.plane_point_2d, move_to_target, 0, 1))
     elif follow_path:
         # identify current path section
         # stops moving end-effector if the end of the path has been reached
@@ -316,7 +308,6 @@ while not rospy.is_shutdown():
             if current_path_section >= path_section_count:
                 # if the end-effector has reached the end of its path
                 Memory.instruction = "stop"
-                pub_desired_velocity.publish(Vector3(0, 0, 0))
                 rospy.loginfo("path end reached")
                 break
             else:
@@ -326,7 +317,7 @@ while not rospy.is_shutdown():
                 current_left_of_border = point_is_left(end, end2_points[current_path_section], Memory.plane_point_2d)
                 if start_left_of_border == current_left_of_border:
                     # we are on this current line
-                    pub_desired_velocity.publish(calculate_velocity(start, end, 1, 1, 0))
+                    pub_desired_velocity.publish(calculate_velocity(start, end, 1, 0))
                     break
                 else:
                     # we have moved to the next section

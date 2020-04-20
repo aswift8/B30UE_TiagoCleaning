@@ -4,8 +4,6 @@ import rospy
 from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import Vector3
 import numpy as np
-from scipy.spatial.transform import Rotation as R
-
 
 class Memory:
     current_rotation = np.array([[0, 0, 1],
@@ -24,11 +22,8 @@ def update_velocity(velocity_data):
 
 
 def update_position():
-    new_velocity = R.from_dcm(Memory.current_rotation).inv().apply(
-        [Memory.current_velocity.x, Memory.current_velocity.y, Memory.current_velocity.z])
-    Memory.current_position.x += (new_velocity[0] / Memory.rate)
-    Memory.current_position.y += (new_velocity[1] / Memory.rate)
-    Memory.current_position.z += (new_velocity[2] / Memory.rate)
+    Memory.current_position.x += (Memory.current_velocity.x / Memory.rate)
+    Memory.current_position.y += (Memory.current_velocity.y / Memory.rate)
     Memory.current_velocity = Vector3(0, 0, 0)
 
 
