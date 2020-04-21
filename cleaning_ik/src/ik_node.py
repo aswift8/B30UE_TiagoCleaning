@@ -47,7 +47,7 @@ sub_correction = rospy.Subscriber("/end_effector/correction_velocity", Vector3, 
 sub_joints = rospy.Subscriber("/arm_controller/state", JointTrajectoryControllerState, cb_joints)	# Current position needed to add velocity * deltatime to
 sub_jacobian = rospy.Subscriber("/cleaning/jacobian", Float32MultiArray, cb_jacobian)			# Jacobian required for inverse differential kinematics
 
-pub_control = rospy.Publisher("/arm_controller/safe_command", JointTrajectory, queue_size=1)		# Arm trajectory commands published here
+pub_control = rospy.Publisher("/arm_controller/command", JointTrajectory, queue_size=1)		# Arm trajectory commands published here
 
 # Joint trajectory message is used to specify joint angles
 msg_arm = JointTrajectory()
