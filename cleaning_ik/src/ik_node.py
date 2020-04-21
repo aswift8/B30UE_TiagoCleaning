@@ -40,14 +40,27 @@ def cb_jacobian(msg):
 	global inverse_jacobian				# (7x6) numpy matrix
 	jacobian = np.ndarray(shape=(6,7), dtype=float, order='F', buffer=np.array(msg.data, dtype=float))
 	inverse_jacobian = np.linalg.pinv(jacobian)	# Matrix isn't square, so pseudoinverse has to be calculated (instead of inverse)
+def cb_orientation(msg):
+	global rot_mat					# (6x6) numpy matrix
+	"""
+	The cb_path and cb_correction velocities use the force-torque sensor frame of reference (i.e. z-axis is outwards towards the surface)
+	The joints use a different frame of reference with the x-axis towards the surface
+	This matrix converts from force-torque frame of reference to joint frame of reference for the end-effector
+	"""
+	rot_mat_corr = np.transpose(np.ndarray(shape=(3,3), dtype=float, order='F', buffer=np.array([0,0,1,1,0,0,0,1,0], dtype=float)))
+	rot_mat_small = np.ndarray(shape=(3,3), dtype=float, order='F', buffer=np.array(msg.data, dtype=float))
+	rot_mat_small = np.dot(rot_mat_small, rot_mat_corr)
+	rot_mat[:3,:3] = rot_mat_small			# Convert linear velocities to correct axes
+	rot_mat[3:,3:] = rot_mat_small			# Convert angular velocities to correct axes
 
 
-sub_path = rospy.Subscriber("/path/desired_velocity", Vector3, cb_path)					# Path following component callback
-sub_correction = rospy.Subscriber("/end_effector/correction_velocity", Vector3, cb_correction)		# Orientation correction component callback
-sub_joints = rospy.Subscriber("/arm_controller/state", JointTrajectoryControllerState, cb_joints)	# Current position needed to add velocity * deltatime to
-sub_jacobian = rospy.Subscriber("/cleaning/jacobian", Float32MultiArray, cb_jacobian)			# Jacobian required for inverse differential kinematics
+sub_path = rospy.Subscriber("/path/desired_velocity", Vector3, cb_path)						# Path following component callback
+sub_correction = rospy.Subscriber("/end_effector/correction_velocity", Vector3, cb_correction)			# Orientation correction component callback
+sub_joints = rospy.Subscriber("/arm_controller/state", JointTrajectoryControllerState, cb_joints)		# Current position needed to add velocity * deltatime to
+sub_jacobian = rospy.Subscriber("/cleaning/jacobian", Float32MultiArray, cb_jacobian)				# Jacobian required for inverse differential kinematics
+sub_ori = rospy.Subscriber("/cleaning/forward_kinematics/orientation", Float32MultiArray, cb_orientation)	# Current orientation required to translate commands into correct frame of reference
 
-pub_control = rospy.Publisher("/arm_controller/command", JointTrajectory, queue_size=1)		# Arm trajectory commands published here
+pub_control = rospy.Publisher("/arm_controller/safe_command", JointTrajectory, queue_size=1)		# Arm trajectory commands published here
 
 # Joint trajectory message is used to specify joint angles
 msg_arm = JointTrajectory()
@@ -65,8 +78,8 @@ msg_arm_point.time_from_start = Duration(nsecs=1e9*duration_mult/freq)	# (durati
 
 while not rospy.is_shutdown():
 	r.sleep()
-	if not (joint_angles is None or inverse_jacobian is None):	# joint_angles and inverse_jacobian are required for calculation, need these to be published first
-		pass
+	if (joint_angles is None or inverse_jacobian is None):	# joint_angles and inverse_jacobian are required for calculation, need these to be published first
+		continue
 	# Transform end-effector velocity to correct frame of reference
 	end_effector_vel_command = np.dot(rot_mat, end_effector_desired_vel)
 	# Use jacobian pseudoinverse to calculate desired joint velocity

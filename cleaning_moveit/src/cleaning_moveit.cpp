@@ -82,14 +82,14 @@ int main(int argc, char**argv)
 			msgPosition.y = vPos[1];
 			msgPosition.z = vPos[2];
 			std_msgs::Float32MultiArray msgOrientation;	// Orientation (column-major)
-			for (unsigned int i = 0; i < 3; ++i) {
-				for (unsigned int j = 0; j < 3; ++j) {
+			for (unsigned int j = 0; j < 3; ++j) {
+				for (unsigned int i = 0; i < 3; ++i) {
 					msgOrientation.data.push_back(mOri(i,j));
 				}
 			}
 			std_msgs::Float32MultiArray msgJacobian;	// Jacobian (column-major)
-			for (unsigned int i = 0; i < 6; ++i) {
-				for (unsigned int j = 0; j < 7; ++j) {
+			for (unsigned int j = 0; j < 7; ++j) {
+				for (unsigned int i = 0; i < 6; ++i) {
 					msgJacobian.data.push_back(mJacobian(i,j));
 				}
 			}
