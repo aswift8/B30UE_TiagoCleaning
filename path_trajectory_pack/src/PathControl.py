@@ -4,8 +4,7 @@ import rospy
 import roslaunch
 import xml.etree.cElementTree
 import math
-from std_msgs.msg import String, Float32MultiArray
-from geometry_msgs.msg import Vector3, Point
+from geometry_msgs.msg import Vector3
 import numpy as np
 
 """
@@ -32,39 +31,17 @@ class Memory:
     rel_origin_boundaries = np.array([[-10, 10], [-10, 10], [-10, 10]])
     # static variables
     instruction = ""
-    global_point_3d = Point(0, 0, 0)
+    global_point_3d = Vector3(0, 0, 0)
     plane_point_2d = (0, 0)
-    current_rotation_3d = np.array([[1, 0, 0],
-                                    [0, 1, 0],
-                                    [0, 0, 1]])
 
 
-# slightly more efficent than using math.pow(a,2)
+# more efficent than using math.pow(a,2)
 def squared(a):
     return a * a
 
 
-def distance_between_points(point_a, point_b):
-    delta_x_sq = squared(point_a.x - point_b.x)
-    delta_y_sq = squared(point_a.y - point_b.y)
-    delta_z_sq = squared(point_a.z - point_b.z)
-    return math.sqrt(delta_x_sq + delta_y_sq + delta_z_sq)
-
-
 def update_position(data):
     Memory.global_point_3d = data
-    recalculate_2d_point()
-
-
-def update_rotation(data):
-    data = data.data
-    Memory.current_rotation_3d = np.array([[data[0], data[3], data[6]],
-                                           [data[1], data[4], data[7]],
-                                           [data[2], data[5], data[8]]])
-    recalculate_2d_point()
-
-
-def recalculate_2d_point():
     Memory.plane_point_2d = Memory.global_point_3d.x, Memory.global_point_3d.y
 
 
@@ -224,7 +201,6 @@ rospy.init_node("path_controller")
 rate = rospy.Rate(Memory.run_rate)
 rospy.Subscriber("/path/instruction", String, new_instruction)
 rospy.Subscriber("/cleaning/forward_kinematics/position", Vector3, update_position)
-rospy.Subscriber("/cleaning/forward_kinematics/orientation", Float32MultiArray, update_rotation)
 pub_desired_velocity = rospy.Publisher("/path/desired_velocity", Vector3, queue_size=5)
 pub_logger = rospy.Publisher("/path/logger", String, queue_size=5)
 
