@@ -9,16 +9,18 @@ class Settings:
     length = 0.0
     height = 0.0
     sponge_diameter = 0.0
+    theta = 0.0
     transpose = False
     xml_address = ""
     def new_settings(list):
-        if len(list) != 5:
+        if len(list) != 6:
             raise IndexError
         Settings.length = float(list[0])
         Settings.height = float(list[1])
         Settings.sponge_diameter = float(list[2])
-        Settings.transpose = list[3].lower() == "true"
-        Settings.xml_address = list[4]
+        Settings.theta = float(list[3])
+        Settings.transpose = list[4].lower() == "true"
+        Settings.xml_address = list[5]
     def print_variables():
         version_print("Length: "+ str(Settings.length))
         version_print("Height: "+ str(Settings.height))
@@ -72,6 +74,7 @@ def run(list):
         Settings.new_settings(list)
         Settings.print_variables()
         path = generate_path()
+        path = rotate_points(path, Settings.theta)
         save_path(path)
     except IndexError:
         print("ERROR: incorrect number of arguments given - 5 arguments required")
@@ -87,6 +90,25 @@ def variables_return_empty_path():
         return True
     else:
         return False
+
+
+def rotate_points(point_list, theta):
+    if theta == 0:
+        return point_list
+    else:
+        theta = math.radians(theta)
+        new_list = []
+        for point in point_list:
+            new_list.append(rotate(point, theta))
+        return new_list
+
+
+
+def rotate(point, theta):
+    p1_x, p1_y = point
+    p2_x = math.cos(theta) * p1_x - math.sin(theta) * p1_y
+    p2_y = math.sin(theta) * p1_x - math.cos(theta) * p1_y
+    return p2_x, p2_y
 
 
 def generate_path():
@@ -149,7 +171,10 @@ def generate_path():
 
 
 if __name__ == "__main__":
-    if sys.argv[1] == "-h" or sys.argv[1] == "--help":
+    if len(sys.argv) == 1:
+        version_print("ERROR: program requires arguments to function")
+        print_argment_format()
+    elif sys.argv[1] == "-h" or sys.argv[1] == "--help":
         print_argment_format()
     else:
         run(sys.argv[1:])

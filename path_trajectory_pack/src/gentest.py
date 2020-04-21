@@ -3,6 +3,13 @@
 import os
 import PathGenerator as pg
 
+length = 6
+height = 4
+sponge_diameter = 1
+theta = 0
+transpose = "true"
+path = "file.xml"
+
 """
 PathGenerator can be called either by:
     importing and calling "PathGenerator.run(options.split(" "))", or
@@ -11,7 +18,7 @@ Where:
     options = "length height sponge_diameter transpose save_location"
 """
 
-options = "6 4 1 true E:\\git\\B30UE_TiagoCleaning\\path_trajectory_pack\\data\\file.xml"
+options = length + " " + height + " " + sponge_diameter + " " + theta + " " + transpose + " " path
 
 #os.system("PathGenerator.py " + options)
 #pg.run(options.split(" "))
