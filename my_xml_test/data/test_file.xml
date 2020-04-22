@@ -1,0 +1,27 @@
+<info delay="3.0">
+    <position>
+        <linear>
+            <x>0.0</x>
+            <y>0.0</y>
+            <z>0.0</z>
+        </linear>
+        <angular>
+            <x>0.0</x>
+            <y>0.0</y>
+            <z>1.0</z>
+        </angular>
+    </position>
+
+    <position>
+        <linear>
+            <x>0.0</x>
+            <y>0.0</y>
+            <z>0.0</z>
+        </linear>
+        <angular>
+            <x>0.0</x>
+            <y>0.0</y>
+            <z>-1.0</z>
+        </angular>
+    </position>
+</info>

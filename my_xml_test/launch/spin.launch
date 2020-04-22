@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="my_xml_test" type="rotate_tiago.py" name="spin_base" args="0.5"/>
+    <node pkg="my_xml_test" type="play_music.py" name="music_player" args="/home/niko/Music/spinning_seal.wav"/>
+</launch>
