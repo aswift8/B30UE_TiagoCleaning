@@ -5,6 +5,26 @@ import math
 import numpy
 
 
+def new_settings(options):
+    if len(options) != 6:
+        raise IndexError
+    Settings.length = float(options[0])
+    Settings.height = float(options[1])
+    Settings.sponge_diameter = float(options[2])
+    Settings.theta = float(options[3])
+    Settings.transpose = options[4].lower() == "true"
+    Settings.xml_address = options[5]
+
+
+def print_variables():
+    version_print("Length: " + str(Settings.length))
+    version_print("Height: " + str(Settings.height))
+    version_print("Sponge Diameter: " + str(Settings.sponge_diameter))
+    version_print("Rotation Angle: " + str(Settings.theta))
+    version_print("Transpose Path: " + str(Settings.transpose))
+    version_print("Save Path: " + Settings.xml_address + "\n")
+
+
 class Settings:
     length = 0.0
     height = 0.0
@@ -12,29 +32,19 @@ class Settings:
     theta = 0.0
     transpose = False
     xml_address = ""
-    def new_settings(list):
-        if len(list) != 6:
-            raise IndexError
-        Settings.length = float(list[0])
-        Settings.height = float(list[1])
-        Settings.sponge_diameter = float(list[2])
-        Settings.theta = float(list[3])
-        Settings.transpose = list[4].lower() == "true"
-        Settings.xml_address = list[5]
-    def print_variables():
-        version_print("Length: "+ str(Settings.length))
-        version_print("Height: "+ str(Settings.height))
-        version_print("Sponge Diameter: "+ str(Settings.sponge_diameter))
-        version_print("Transpose Path: "+ str(Settings.transpose))
-        version_print("Save Path: "+ Settings.xml_address + "\n")
+
+
+# change depending on what version of python you're using
+def version_print(string):
+    print string
 
 
 def list_to_string(list):
     length = len(list)
     string = ""
-    for i in range(0, length-1):
+    for i in range(0, length - 1):
         string = string + list[i] + " "
-    string = string + list[length-1]
+    string = string + list[length - 1]
     return string
 
 
@@ -60,19 +70,16 @@ def write_point(point):
     return string
 
 
-# change depending on what version of python you're using
-def version_print(string):
-    print(string)
-
-
 def print_argment_format():
-    version_print("Arguments: <float - length> <float - height> <float - sponge diameter> <boolean - transpose path> <string - save/path>")
+    version_print(
+        "Arguments: <float - length> <float - height> <float - sponge diameter> <float - rotation angle> <boolean - "
+        "transpose path> <string - save/path>")
 
 
 def run(list):
     try:
-        Settings.new_settings(list)
-        Settings.print_variables()
+        new_settings(list)
+        print_variables()
         path = generate_path()
         path = rotate_points(path, Settings.theta)
         save_path(path)
@@ -86,7 +93,7 @@ def run(list):
 
 def variables_return_empty_path():
     if Settings.sponge_diameter <= 0 or (abs(Settings.length) <= Settings.sponge_diameter
-    and abs(Settings.height) <= Settings.sponge_diameter):
+                                         and abs(Settings.height) <= Settings.sponge_diameter):
         return True
     else:
         return False
@@ -101,7 +108,6 @@ def rotate_points(point_list, theta):
         for point in point_list:
             new_list.append(rotate(point, theta))
         return new_list
-
 
 
 def rotate(point, theta):
@@ -128,7 +134,7 @@ def generate_path():
 
     x_current = 0.0
     y_current = 0.0
-    path = [(0.0,0.0)]
+    path = [(0.0, 0.0)]
 
     if Settings.transpose:
         vertical_lines = math.floor(abs(x_length / Settings.sponge_diameter)) + 1
@@ -138,34 +144,34 @@ def generate_path():
             x_step = Settings.length / vertical_lines
             while True:
                 if y_length != 0.0:
-                    if (y_current == 0.0):
+                    if y_current == 0.0:
                         y_current = y_length
                     else:
                         y_current = 0.0
                     path.append((x_current, y_current))
 
                 x_current = x_current + x_step
-                if (abs(x_current) > abs(x_length)):
+                if abs(x_current) > abs(x_length):
                     break
                 path.append((x_current, y_current))
     else:
-         horizontal_lines = math.floor(abs(y_length / Settings.sponge_diameter)) + 1
-         if horizontal_lines <= 1:
-             path.append((x_length, 0))
-         else:
-             y_step = Settings.height / horizontal_lines
-             while True:
-                 if x_length != 0.0:
-                     if (x_current == 0.0):
-                         x_current = x_length
-                     else:
-                         x_current = 0.0
-                     path.append((x_current, y_current))
+        horizontal_lines = math.floor(abs(y_length / Settings.sponge_diameter)) + 1
+        if horizontal_lines <= 1:
+            path.append((x_length, 0))
+        else:
+            y_step = Settings.height / horizontal_lines
+            while True:
+                if x_length != 0.0:
+                    if x_current == 0.0:
+                        x_current = x_length
+                    else:
+                        x_current = 0.0
+                    path.append((x_current, y_current))
 
-                 y_current = y_current + y_step
-                 if (abs(y_current) > abs(y_length)):
-                     break
-                 path.append((x_current, y_current))
+                y_current = y_current + y_step
+                if abs(y_current) > abs(y_length):
+                    break
+                path.append((x_current, y_current))
 
     return path
 

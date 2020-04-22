@@ -4,6 +4,7 @@ import rospy
 import roslaunch
 import xml.etree.cElementTree
 import math
+from std_msgs.msg import String
 from geometry_msgs.msg import Vector3
 import numpy as np
 
@@ -28,7 +29,7 @@ class Memory:
     speed = 1
     correction_threshold = 0.01
     velocity_threshold = 0.01
-    rel_origin_boundaries = np.array([[-10, 10], [-10, 10], [-10, 10]])
+    rel_origin_boundaries = np.array([[-15, 15], [-15, 15], [-15, 15]])
     # static variables
     instruction = ""
     global_point_3d = Vector3(0, 0, 0)
@@ -66,8 +67,9 @@ def calculate_velocity(start_point, end_point,
         if abs(correction_magnitude) > Memory.correction_threshold:
             correction_m = inverse_gradient(get_gradient(start_point, end_point))
             if correction_m == "inf":
-                # TODO confirm this lines works as intended
-                vector.y -= correction_magnitude) * linear_correct_multi
+                direction = start_point[0] - end_point[0]
+                direction = direction / abs(direction) # = either 1 or -1
+                vector.y += correction_magnitude * linear_correct_multi * direction
             elif correction_m == 0:
                 vector.x += correction_magnitude * linear_correct_multi
             else:
@@ -254,15 +256,15 @@ while not rospy.is_shutdown():
             move_to_point = True
             try:
                 move_to_target = (float(instruction[1]), float(instruction[2]))
-            except ValueError:
-                pub_logger.publish("invalid paramters - must be two numbers specifying x and y coordinates")
+            except (ValueError, IndexError):
+                pub_logger.publish("invalid parameters - must be two numbers specifying x and y coordinates")
         elif instruction[0] == "moveBy":
             move_to_point = True
             try:
                 move_to_target = (Memory.plane_point_2d[0] + float(instruction[1]),
                                   Memory.plane_point_2d[1] + float(instruction[2]))
-            except ValueError:
-                pub_logger.publish("invalid paramters - must be two numbers specifying x and y coordinates")
+            except (ValueError, IndexError):
+                pub_logger.publish("invalid parameters - must be two numbers specifying x and y coordinates")
         else:
             # for unrecognised commands
             pub_logger.publish("unrecognised command: " + Memory.instruction)
