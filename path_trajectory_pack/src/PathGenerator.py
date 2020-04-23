@@ -36,7 +36,7 @@ class Settings:
 
 # change depending on what version of python you're using
 def version_print(string):
-    print string
+    print(string)
 
 
 def list_to_string(list):
@@ -112,7 +112,7 @@ def rotate_points(point_list, theta):
 
 def rotate(point, theta):
     p1_x, p1_y = point
-    p2_x = math.cos(theta) * p1_x - math.sin(theta) * p1_y
+    p2_x = math.cos(theta) * p1_x + math.sin(theta) * p1_y
     p2_y = math.sin(theta) * p1_x - math.cos(theta) * p1_y
     return p2_x, p2_y
 
