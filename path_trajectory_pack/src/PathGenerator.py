@@ -48,7 +48,7 @@ def list_to_string(list):
     return string
 
 
-def save_path(path_list):
+def save_path(path_list, location):
     version_print(str(path_list))
 
     string = "<root>\n"
@@ -56,7 +56,7 @@ def save_path(path_list):
         string = string + write_point(path_list[i])
     string = string + "</root>"
 
-    f = open(Settings.xml_address, "w")
+    f = open(location, "w")
     f.write(string)
     f.close()
 
@@ -82,7 +82,7 @@ def run(list):
         print_variables()
         path = generate_path()
         path = rotate_points(path, Settings.theta)
-        save_path(path)
+        save_path(path, Settings.xml_address)
     except IndexError:
         print("ERROR: incorrect number of arguments given - 5 arguments required")
         print_argment_format()
