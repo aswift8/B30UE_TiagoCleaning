@@ -1,0 +1,4 @@
+<launch>
+	<node name="moving_arm_joint_6" pkg="moving_arm_6" type="moving_arm_6.py" output="screen" />
+</launch>
+
